@@ -1,0 +1,25 @@
+services:
+  mnemonic:
+    build:
+      context: .
+    container_name: mnemonic
+    environment:
+      DATA_DIR: /data/chroma
+      VK_URL: ${VK_URL:-http://voight-kampff:8080}
+    volumes:
+      - mnemonic_data:/data
+    networks:
+      - ansible
+    restart: unless-stopped
+
+networks:
+  ansible:
+    external: true
+
+volumes:
+  mnemonic_data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: "addr=${NAS_IP},rw,nfsvers=4"
+      device: ":${NAS_PATH}"
