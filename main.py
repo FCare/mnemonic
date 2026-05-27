@@ -72,6 +72,7 @@ class FactsRequest(BaseModel):
     facts: list[Fact]
     session_id: str
     session_ids: Optional[list[str]] = None
+    is_habit: bool = False
 
 
 @app.post("/users/{username}/sessions")
@@ -103,6 +104,7 @@ async def store_facts(username: str, body: FactsRequest, _: Auth):
             "value": f.value,
             "session_id": body.session_id,
             "session_ids": ",".join(body.session_ids) if body.session_ids else body.session_id,
+            "is_habit": body.is_habit,
             "timestamp": ts,
         } for f in body.facts],
     )
@@ -114,6 +116,21 @@ async def store_facts(username: str, body: FactsRequest, _: Auth):
 async def list_facts(username: str, _: Auth, fact_type: Optional[str] = None):
     where = {"$and": [{"username": username}, {"type": fact_type}]} if fact_type else {"username": username}
     results = user_facts.get(where=where)
+    return [
+        {
+            "id": id_,
+            "type": m["type"],
+            "value": m["value"],
+            "session_id": m["session_id"],
+            "timestamp": m["timestamp"],
+        }
+        for id_, m in zip(results["ids"], results["metadatas"])
+    ]
+
+
+@app.get("/users/{username}/habits")
+async def list_habits(username: str, _: Auth):
+    results = user_facts.get(where={"$and": [{"username": username}, {"is_habit": True}]})
     return [
         {
             "id": id_,
