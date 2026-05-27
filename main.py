@@ -71,6 +71,7 @@ class Fact(BaseModel):
 class FactsRequest(BaseModel):
     facts: list[Fact]
     session_id: str
+    session_ids: Optional[list[str]] = None
 
 
 @app.post("/users/{username}/sessions")
@@ -101,6 +102,7 @@ async def store_facts(username: str, body: FactsRequest, _: Auth):
             "type": f.type,
             "value": f.value,
             "session_id": body.session_id,
+            "session_ids": ",".join(body.session_ids) if body.session_ids else body.session_id,
             "timestamp": ts,
         } for f in body.facts],
     )
@@ -143,6 +145,17 @@ async def search_facts(username: str, q: str, _: Auth, n: int = 5):
         }
         for id_, m in zip(results["ids"][0], results["metadatas"][0])
     ]
+
+
+@app.delete("/users/{username}/facts/{fact_id}")
+async def delete_fact(username: str, fact_id: str, _: Auth):
+    results = user_facts.get(ids=[fact_id])
+    if not results["ids"]:
+        raise HTTPException(status_code=404, detail="Fait introuvable")
+    if results["metadatas"][0]["username"] != username:
+        raise HTTPException(status_code=403, detail="Accès refusé")
+    user_facts.delete(ids=[fact_id])
+    return {"deleted": fact_id}
 
 
 @app.get("/users/{username}/sessions/{session_id}")
