@@ -126,6 +126,13 @@ async def list_facts(username: str, _: Auth, fact_type: Optional[str] = None):
     ]
 
 
+@app.get("/users/{username}/facts/types")
+async def list_fact_types(username: str, _: Auth):
+    results = user_facts.get(where={"username": username})
+    types = sorted(set(m["type"] for m in results["metadatas"]))
+    return {"types": types}
+
+
 @app.get("/users/{username}/facts/search")
 async def search_facts(username: str, q: str, _: Auth, n: int = 5):
     count = user_facts.count()
